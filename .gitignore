@@ -1,0 +1,5 @@
+__pycache__/
+build/
+pylego.egg-info/
+pylego.h
+venv/
