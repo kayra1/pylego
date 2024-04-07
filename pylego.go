@@ -8,7 +8,6 @@ import (
 	"crypto/rand"
 	"crypto/x509"
 	"encoding/pem"
-	"fmt"
 	"log"
 	"os"
 	"unsafe"
@@ -35,7 +34,7 @@ func (u *MyUser) GetPrivateKey() crypto.PrivateKey {
 	return u.key
 }
 
-func request_certificate(email string, server string, csr []byte, plugin string) error {
+func request_certificate(email string, server string, csr []byte, plugin string) (string, error) {
 	// Create a user. New accounts need an email and private key to start.
 	privateKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
@@ -65,7 +64,6 @@ func request_certificate(email string, server string, csr []byte, plugin string)
 		log.Fatal(err)
 	}
 
-
 	// New users will need to register
 	reg, err := client.Registration.Register(registration.RegisterOptions{TermsOfServiceAgreed: true})
 	if err != nil {
@@ -89,13 +87,12 @@ func request_certificate(email string, server string, csr []byte, plugin string)
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("%s\n", certificates)
 
-	return nil
+	return string(certificates.Certificate), nil
 }
 
 //export run
-func run(email *C.char, server *C.char, csr *C.char, plugin *C.char, env **C.char, env_len int) int {
+func run(email *C.char, server *C.char, csr *C.char, plugin *C.char, env **C.char, env_len int) *C.char {
 	goemail := C.GoString(email)
 	goserver := C.GoString(server)
 	gocsr := []byte(C.GoString(csr))
@@ -107,11 +104,12 @@ func run(email *C.char, server *C.char, csr *C.char, plugin *C.char, env **C.cha
 	for i := 0; i < env_len; i = i + 2 {
 		os.Setenv(env_slice[i], env_slice[i+1])
 	}
-	err := request_certificate(goemail, goserver, gocsr, goplugin)
+	certificate_bundle, err := request_certificate(goemail, goserver, gocsr, goplugin)
 	if err != nil {
-		return 1
+		return nil
 	}
-	return 0
+	cstr := C.CString(certificate_bundle)
+	return cstr
 }
 
 func main() {}
