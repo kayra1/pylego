@@ -1,4 +1,4 @@
-module github.com/ghislainbourgeois/pylego
+module github.com/kayra1/lepy
 
 go 1.22.1
 

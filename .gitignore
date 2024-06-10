@@ -1,5 +1,8 @@
 __pycache__/
+*.egg-info/
 build/
-pylego.egg-info/
-pylego.h
+
+src/lepy/*.h
+src/lepy/*.so
+
 venv/

@@ -1,27 +1,26 @@
-from distutils.errors import CompileError
-from subprocess import call
+"""Build lepy."""
 
-from setuptools import Extension, setup
-from setuptools.command.build_ext import build_ext
+import os
+import subprocess
 
-
-class build_go_ext(build_ext):
-    def build_extension(self, ext) -> None:
-        ext_path = self.get_ext_fullpath(ext.name)
-        cmd = ['go', 'build', '-buildmode=c-shared', '-o', ext_path]
-        cmd += ext.sources
-        out = call(cmd)
-        if out != 0:
-            raise CompileError('Go build failed')
+from setuptools import setup
+from setuptools.command.build_py import build_py as build_py_orig
 
 
-setup(
-    name='pylego',
-    version='0.1.0',
-    py_modules=['pylego'],
-    ext_modules=[
-        Extension('_pylego', ['pylego.go'])
-    ],
-    cmdclass={'build_ext': build_go_ext},
-    zip_safe=False,
-)
+def build_go_library():
+    """Build the lego application into a shared .so file."""
+    os.chdir("src/lepy")
+    subprocess.check_call(["go", "build", "-o", "lego.so", "-buildmode=c-shared", "lego-stub.go"])
+    os.chdir("../..")
+
+
+class build_py(build_py_orig):  # noqa: N801
+    """Build requirements for the package."""
+
+    def run(self):
+        """Build modules, packages, and copy data files to build directory."""
+        build_go_library()
+        super().run()
+
+
+setup(cmdclass={"build_py": build_py})

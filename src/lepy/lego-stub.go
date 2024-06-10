@@ -17,6 +17,7 @@ import (
 	"github.com/go-acme/lego/v4/providers/dns"
 	"github.com/go-acme/lego/v4/registration"
 )
+import "fmt"
 
 type MyUser struct {
 	Email        string
@@ -80,8 +81,8 @@ func request_certificate(email string, server string, csr []byte, plugin string)
 		log.Fatal(err)
 	}
 	request := certificate.ObtainForCSRRequest{
-		CSR: parsed_csr,
-		Bundle:  true,
+		CSR:    parsed_csr,
+		Bundle: true,
 	}
 	certificates, err := client.Certificate.ObtainForCSR(request)
 	if err != nil {
@@ -89,6 +90,11 @@ func request_certificate(email string, server string, csr []byte, plugin string)
 	}
 
 	return string(certificates.Certificate), nil
+}
+
+//export Hello
+func Hello() {
+	fmt.Println("Hello from Go")
 }
 
 //export run
