@@ -1,29 +1,37 @@
+"""Python interface that wraps the lego application CLI."""
+
 import ctypes
+import json
 from pathlib import Path
 
 here = Path(__file__).absolute().parent
 so_file = here / ("lego.so")
 library = ctypes.cdll.LoadLibrary(so_file)
-library.run.restype = ctypes.c_char_p
 
 
-def hello():
-    library.Hello()
+def run_lego_command(
+    email: str, server: str, csr_path: str, plugin: str, env: dict[str, str]
+) -> str:
+    """Run an arbitrary command in the Lego application. Read more at https://go-acme.github.io.
 
+    Args:
+        email: the email to be used for registration
+        server: the server to be used for requesting a certificate that implements the ACME protocol
+        csr_path: the path to the CSR file
+        plugin: which DNS provider plugin to use for the request. Find yours at https://go-acme.github.io/lego/dns/.
+        env: the environment variables required for the chosen plugin.
+    """
+    library.RunLegoCommand.restype = ctypes.c_int
+    library.RunLegoCommand.argtypes = [ctypes.c_wchar_p]
 
-def get_certificate(email: str, server: str, csr: bytes, plugin: str, env: dict[str, str]) -> str:
-    envvar = list(sum(env.items(), ()))
-    envs = (ctypes.c_char_p * len(envvar))()
-    envs[:] = [bytes(e, "utf-8") for e in envvar]
-
-    ctypes.c_char_p(bytes(email, "utf-8"))
-    c_certificate_bundle: bytes = library.run(
-        ctypes.c_char_p(bytes(email, "utf-8")),
-        ctypes.c_char_p(bytes(server, "utf-8")),
-        csr,
-        ctypes.c_char_p(bytes(plugin, "utf-8")),
-        envs,
-        len(envs),
+    message = json.dumps(
+        {
+            "email": email,
+            "server": server,
+            "csr_path": csr_path,
+            "plugin": plugin,
+            "env": env,
+        }
     )
-    certificate_bundle = c_certificate_bundle.decode(encoding="utf-8")
-    return certificate_bundle
+
+    return library.RunLegoCommand(message)
